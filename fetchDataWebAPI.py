@@ -1,7 +1,7 @@
 import requests
 
 # Define your Firebase Function API endpoint
-API_URL = "https://us-central1-taskmaster-2a195.cloudfunctions.net/api/tasks"
+API_URL = "https://api-el2iezsu2q-uc.a.run.app/tasks"
 
 # Function to fetch tasks from the API
 def fetch_tasks():
