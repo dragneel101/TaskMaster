@@ -1,34 +1,22 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
-
 const functions = require("firebase-functions");
-const express = require("express");
 const admin = require("firebase-admin");
+const express = require("express");
 const cors = require("cors");
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
-
 const db = admin.firestore();
-const app = express();
 
-// Middleware
+const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Base Route
+// ✅ Base Route
 app.get("/", (req, res) => {
-  res.send("TaskMaster Web API hosted on Firebase Functions");
+  res.send("TaskMaster Web API connected to Firestore is running...");
 });
 
-// 1. Get All Tasks
+// ✅ 1. Get All Tasks (Reads from Firestore)
 app.get("/tasks", async (req, res) => {
   try {
     const snapshot = await db.collection("tasks").get();
@@ -48,10 +36,12 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
-// 2. Get a Task by ID
+// ✅ 2. Get a Task by ID
 app.get("/tasks/:id", async (req, res) => {
   try {
-    const doc = await db.collection("tasks").doc(req.params.id).get();
+    const taskRef = db.collection("tasks").doc(req.params.id);
+    const doc = await taskRef.get();
+
     if (!doc.exists) return res.status(404).json({message: "Task not found"});
 
     res.json({id: doc.id, ...doc.data()});
@@ -60,7 +50,7 @@ app.get("/tasks/:id", async (req, res) => {
   }
 });
 
-// 3. Create a New Task
+// ✅ 3. Create a New Task (Writes to Firestore)
 app.post("/tasks", async (req, res) => {
   try {
     const {title, status, deadline} = req.body;
@@ -83,7 +73,7 @@ app.post("/tasks", async (req, res) => {
   }
 });
 
-// 4. Update a Task by ID
+// ✅ 4. Update a Task by ID
 app.put("/tasks/:id", async (req, res) => {
   try {
     const taskRef = db.collection("tasks").doc(req.params.id);
@@ -98,7 +88,7 @@ app.put("/tasks/:id", async (req, res) => {
   }
 });
 
-// 5. Delete a Task by ID
+// ✅ 5. Delete a Task by ID
 app.delete("/tasks/:id", async (req, res) => {
   try {
     await db.collection("tasks").doc(req.params.id).delete();
@@ -108,5 +98,5 @@ app.delete("/tasks/:id", async (req, res) => {
   }
 });
 
-// Export API as a Firebase Function
+// ✅ Deploy API as a Firebase Function
 exports.api = functions.https.onRequest(app);
