@@ -5,6 +5,7 @@ const {db} = require("./firebase");
 
 const app = express();
 app.use(cors({origin: true}));
+app.use(express.json());
 
 // GET /tasks - fetch tasks from Firestore
 app.get("/tasks", async (req, res) => {
@@ -16,5 +17,24 @@ app.get("/tasks", async (req, res) => {
     res.status(500).json({error: error.message});
   }
 });
+
+app.post("/tasks", async (req, res) => {
+    try {
+      const { title, deadline, status } = req.body;
+      if (!title || !deadline || !status) {
+        return res.status(400).json({ error: "Missing task fields" });
+      }
+  
+      const newTaskRef = await db.collection("tasks").add({
+        title,
+        deadline,
+        status
+      });
+  
+      res.status(201).json({ id: newTaskRef.id, title, deadline, status });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
 exports.api = functions.https.onRequest(app);
