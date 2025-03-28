@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "taskmaster-2a195"
-  }
+    "default": "taskmaster-2a195",
+    "dev": "taskmaster-2a195"
+  },
+  "targets": {},
+  "etags": {}
 }
