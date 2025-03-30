@@ -1,5 +1,6 @@
 import React from "react";
 import TaskForm from "../components/TaskForm";
+import TaskFilter from "../components/TaskFilter";
 import TaskList from "../components/TaskList";
 
 
@@ -13,6 +14,7 @@ const Dashboard = () => {
       <h1 className="text-2xl font-bold mb-6"> TaskMaster Dashboard</h1>
       <TaskForm />
       <TaskList />
+      <TaskFilter />
     </div>
   );
 };
