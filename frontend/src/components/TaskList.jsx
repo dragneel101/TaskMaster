@@ -1,3 +1,4 @@
+import DeleteButton from "./DeleteButton";
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase";
 import {
@@ -6,6 +7,7 @@ import {
   orderBy,
   onSnapshot,
 } from "firebase/firestore";
+
 
 /**
  * TaskList Component
@@ -45,6 +47,8 @@ const TaskList = () => {
               {task.status} | Due: {task.deadline}
             </div>
             <div className="text-xs text-gray-500">Type: {task.type}</div>
+            <div><DeleteButton taskId={task.id} /></div>
+            
           </li>
         ))}
       </ul>

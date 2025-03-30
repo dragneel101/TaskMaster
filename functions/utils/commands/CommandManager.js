@@ -10,26 +10,24 @@ class CommandManager {
     this.history = [];
   }
 
-
   /**
    * Executes a command and stores it in history.
-   * @param {Object} command - A command object with execute() and undo().
+   * @param {Object} command - A command object with async execute() and undo().
    */
-  execute(command) {
-    command.execute();
+  async execute(command) {
+    await command.execute();
     this.history.push(command);
   }
 
   /**
    * Undoes the most recently executed command.
    */
-  undo() {
+  async undo() {
     const command = this.history.pop();
     if (command) {
-      command.undo();
+      await command.undo();
     }
   }
 }
 
 module.exports = new CommandManager(); // Singleton
-
