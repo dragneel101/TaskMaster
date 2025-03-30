@@ -23,7 +23,7 @@ const TaskFilter = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:5001/taskmaster-2a195/us-central1/api/tasks?startDate=${startDate}&endDate=${endDate}`
+        `https://us-central1-taskmaster-2a195.cloudfunctions.net/api/tasks?startDate=${startDate}&endDate=${endDate}`
       );
       const data = await res.json();
 

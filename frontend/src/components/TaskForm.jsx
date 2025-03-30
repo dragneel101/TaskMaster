@@ -11,6 +11,7 @@ const TaskForm = () => {
   const [type, setType] = useState("personal");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const backendURL = "https://us-central1-taskmaster-2a195.cloudfunctions.net/api";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +23,7 @@ const TaskForm = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5001/taskmaster-2a195/us-central1/api/tasks", {
+      const res = await fetch(`${backendURL}/tasks`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
