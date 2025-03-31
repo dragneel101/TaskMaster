@@ -39,7 +39,10 @@ const TaskList = ({ onTaskSelect, selectedTaskId }) => {
           >
             <div className="font-medium">{task.title}</div>
             <div className="text-sm text-gray-600">
-              {task.status} | Due: {task.deadline}
+              {task.status} | Due:{" "}
+              {task.deadline?.toDate
+                ? task.deadline.toDate().toLocaleString()
+                : new Date(task.deadline).toLocaleString()}
             </div>
             <div className="text-xs text-gray-500">Type: {task.type}</div>
             <div><DeleteButton taskId={task.id} /></div>

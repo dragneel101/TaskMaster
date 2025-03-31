@@ -1,6 +1,8 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
 import threading
+from datetime import datetime
+from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 
 # -------------------------------
 # Singleton Pattern: DatabaseConnection
@@ -24,7 +26,7 @@ class DatabaseConnection:
         with cls._lock:  # Ensure thread-safe instantiation
             if cls._instance is None:
                 # Load credentials from Firebase Admin SDK service account key
-                cred = credentials.Certificate("./taskmaster-2a195-firebase-adminsdk-fbsvc-f4f4130e97.json")
+                cred = credentials.Certificate("./taskmaster-service-account.json")
                 
                 # Initialize the Firebase app (only once)
                 firebase_admin.initialize_app(cred)
@@ -43,8 +45,10 @@ def add_task():
     try:
         task_ref = db.collection("tasks").add({
             "title": "Complete Milestone 4",
-            "deadline": "2024-04-10",
-            "status": "Pending"
+            "deadline": datetime(2025, 4, 9, 15, 0),
+            "status": "Pending",
+            "email" : "khaituraish@gmail.com"
+
         })
         print(f"✅ Task added with ID: {task_ref[1].id}")
     except Exception as e:

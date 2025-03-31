@@ -2,22 +2,23 @@ import React, { useState } from "react";
 
 /**
  * TaskForm Component
- * Allows users to create a new task.
- * Sends data to backend `/tasks` (which uses Factory + Command Patterns).
+ * Allows users to create a new task with datetime and optional email.
  */
 const TaskForm = () => {
   const [title, setTitle] = useState("");
   const [deadline, setDeadline] = useState("");
   const [type, setType] = useState("personal");
+  const [email, setEmail] = useState(""); // ✅ new
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
   const backendURL = "https://us-central1-taskmaster-2a195.cloudfunctions.net/api";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title || !deadline || !type) {
-      setMessage("Please fill in all fields.");
+      setMessage("Please fill in all required fields.");
       return;
     }
 
@@ -28,7 +29,12 @@ const TaskForm = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title, deadline, type }),
+        body: JSON.stringify({
+          title,
+          deadline: new Date(deadline).toISOString(), // ✅ ensure it's full ISO datetime
+          type,
+          email: email || null, // optional
+        }),
       });
 
       const result = await res.json();
@@ -38,12 +44,13 @@ const TaskForm = () => {
         setTitle("");
         setDeadline("");
         setType("personal");
+        setEmail("");
       } else {
-        setMessage(" Error: " + result.error);
+        setMessage("Error: " + result.error);
       }
     } catch (error) {
       console.error("Submit error:", error);
-      setMessage(" Failed to connect to backend.");
+      setMessage("Failed to connect to backend.");
     }
 
     setLoading(false);
@@ -60,16 +67,29 @@ const TaskForm = () => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="w-full border px-2 py-1 rounded"
+          required
         />
       </div>
 
       <div className="mb-2">
-        <label className="block text-sm mb-1">Deadline:</label>
+        <label className="block text-sm mb-1">Deadline (Date & Time):</label>
         <input
-          type="date"
+          type="datetime-local"
           value={deadline}
           onChange={(e) => setDeadline(e.target.value)}
           className="w-full border px-2 py-1 rounded"
+          required
+        />
+      </div>
+
+      <div className="mb-2">
+        <label className="block text-sm mb-1">Notification Email (optional):</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border px-2 py-1 rounded"
+          placeholder="user@example.com"
         />
       </div>
 

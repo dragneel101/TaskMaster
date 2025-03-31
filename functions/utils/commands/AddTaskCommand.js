@@ -19,7 +19,17 @@ class AddTaskCommand {
    * @return {Promise<void>}
    */
   async execute() {
-    this.docRef = await this.db.collection("tasks").add(this.taskData);
+    const {deadline, ...rest} = this.taskData;
+
+    // Convert deadline to Date object if it's a string
+    const deadlineDate = deadline ? new Date(deadline) : null;
+
+    const dataToSave = {
+      ...rest,
+      deadline: deadlineDate,
+    };
+
+    this.docRef = await this.db.collection("tasks").add(dataToSave);
     console.log(`Task added: ${this.docRef.id}`);
   }
 

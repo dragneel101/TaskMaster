@@ -6,15 +6,24 @@ class TaskFactory {
    * Creates a task based on the type.
    * @param {string} type - The type of task (e.g., "personal", "work", "team").
    * @param {string} title - The task title.
-   * @param {string} deadline - The deadline date in YYYY-MM-DD format.
+   * @param {string|Date} deadline - The deadline date in ISO format
+   * @param {string} [email] - Optional email for notifications.
    * @return {Object} - A task object with default fields.
    */
-  static createTask(type, title, deadline) {
+  static createTask(type, title, deadline, email = null) {
+    const deadlineDate = deadline instanceof Date ?
+     deadline : new Date(deadline);
+
+    const baseTask = {
+      title,
+      deadline: deadlineDate,
+      email,
+    };
+
     switch (type) {
       case "personal":
         return {
-          title,
-          deadline,
+          ...baseTask,
           status: "Pending",
           priority: "Low",
           shared: false,
@@ -22,8 +31,7 @@ class TaskFactory {
         };
       case "work":
         return {
-          title,
-          deadline,
+          ...baseTask,
           status: "In Progress",
           priority: "High",
           shared: true,
@@ -31,8 +39,7 @@ class TaskFactory {
         };
       case "team":
         return {
-          title,
-          deadline,
+          ...baseTask,
           status: "Not Started",
           priority: "Medium",
           shared: true,
@@ -46,4 +53,3 @@ class TaskFactory {
 }
 
 module.exports = TaskFactory;
-

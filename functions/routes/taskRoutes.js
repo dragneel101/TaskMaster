@@ -39,13 +39,15 @@ router.get("/tasks", async (req, res) => {
  */
 router.post("/tasks", async (req, res) => {
   try {
-    const {title, deadline, type} = req.body;
+    const {title, deadline, type, email} = req.body;
 
     if (!title || !deadline || !type) {
       return res.status(400).json({error: "Missing task fields"});
     }
 
-    const task = TaskFactory.createTask(type, title, deadline);
+    const parsedDeadline = new Date(deadline); // ensures deadline includes time
+
+    const task = TaskFactory.createTask(type, title, parsedDeadline, email);
     const command = new AddTaskCommand(db, task);
     await CommandManager.execute(command);
 

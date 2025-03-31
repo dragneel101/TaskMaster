@@ -11,8 +11,11 @@ const UpdateTaskForm = ({ task, onSuccess, onCancel }) => {
     if (task) {
       setTitle(task.title || '');
       setStatus(task.status || '');
-      setDeadline(task.deadline || '');
-      setShowUndoButton(false); // Reset on new task selection
+      const taskDeadline = task.deadline?.toDate
+        ? task.deadline.toDate()  // Firestore Timestamp -> JS Date
+        : new Date(task.deadline);
+      setDeadline(taskDeadline.toISOString().slice(0, 16)); // Format for datetime-local
+      setShowUndoButton(false);
     }
   }, [task]);
 
@@ -22,7 +25,7 @@ const UpdateTaskForm = ({ task, onSuccess, onCancel }) => {
     const updatedFields = {};
     if (title) updatedFields.title = title;
     if (status) updatedFields.status = status;
-    if (deadline) updatedFields.deadline = deadline;
+    if (deadline) updatedFields.deadline = new Date(deadline).toISOString(); // Full datetime
 
     try {
       const res = await fetch(`${backendURL}/tasks/${task.id}`, {
@@ -34,7 +37,7 @@ const UpdateTaskForm = ({ task, onSuccess, onCancel }) => {
       if (!res.ok) throw new Error('Failed to update');
 
       alert('✅ Task updated!');
-      setShowUndoButton(true); // Show Undo
+      setShowUndoButton(true);
       onSuccess && onSuccess();
     } catch (err) {
       console.error(err);
@@ -49,11 +52,10 @@ const UpdateTaskForm = ({ task, onSuccess, onCancel }) => {
       });
 
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.message);
 
       alert(`↩️ ${data.message}`);
-      setShowUndoButton(false); // Hide after undo
+      setShowUndoButton(false);
     } catch (err) {
       console.error(err);
       alert('❌ Failed to undo update');
@@ -69,21 +71,23 @@ const UpdateTaskForm = ({ task, onSuccess, onCancel }) => {
         onChange={(e) => setTitle(e.target.value)}
         className="border p-2 w-full rounded"
       />
+
       <input
-        type="date"
+        type="datetime-local"
         value={deadline}
         onChange={(e) => setDeadline(e.target.value)}
         className="border p-2 w-full rounded"
       />
+
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value)}
         className="border p-2 w-full rounded"
       >
         <option value="">-- Select status --</option>
+        <option value="Pending">Pending</option>
         <option value="In Progress">In Progress</option>
         <option value="Completed">Completed</option>
-        <option value="Pending">Pending</option>
       </select>
 
       <div className="flex space-x-2">
