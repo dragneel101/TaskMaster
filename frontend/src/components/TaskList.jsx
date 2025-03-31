@@ -8,19 +8,11 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-
-/**
- * TaskList Component
- * Implements the Observer Pattern via Firestore onSnapshot().
- * Subscribes to the tasks collection and re-renders when tasks update.
- */
-const TaskList = () => {
+const TaskList = ({ onTaskSelect, selectedTaskId }) => {
   const [tasks, setTasks] = useState([]);
 
   useEffect(() => {
-    // Observer Pattern: real-time listener on the tasks collection
     const q = query(collection(db, "tasks"), orderBy("deadline", "asc"));
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const taskData = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -28,8 +20,6 @@ const TaskList = () => {
       }));
       setTasks(taskData);
     });
-
-    // Cleanup listener on component unmount
     return () => unsubscribe();
   }, []);
 
@@ -40,7 +30,12 @@ const TaskList = () => {
         {tasks.map((task) => (
           <li
             key={task.id}
-            className="bg-gray-100 p-3 rounded shadow-sm hover:shadow-md transition"
+            onClick={() => onTaskSelect && onTaskSelect(task)}
+            className={`p-3 rounded shadow-sm transition cursor-pointer ${
+              selectedTaskId === task.id
+                ? "bg-blue-100 border-2 border-blue-500"
+                : "bg-gray-100 hover:shadow-md"
+            }`}
           >
             <div className="font-medium">{task.title}</div>
             <div className="text-sm text-gray-600">
@@ -48,7 +43,6 @@ const TaskList = () => {
             </div>
             <div className="text-xs text-gray-500">Type: {task.type}</div>
             <div><DeleteButton taskId={task.id} /></div>
-            
           </li>
         ))}
       </ul>
