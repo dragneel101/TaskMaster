@@ -10,6 +10,7 @@ const CommandManager = require("../utils/commands/CommandManager");
 const UpdateTaskCommand = require("../utils/commands/UpdateTaskCommand");
 // Temporary in-memory store for undo operations
 const undoMap = new Map();
+const {sendEmail} = require("../utils/notifier");
 
 /**
  * GET /tasks
@@ -50,6 +51,23 @@ router.post("/tasks", async (req, res) => {
     const task = TaskFactory.createTask(type, title, parsedDeadline, email);
     const command = new AddTaskCommand(db, task);
     await CommandManager.execute(command);
+    if (email) {
+      const formattedDate = parsedDeadline.toLocaleString();
+      if (email) {
+        console.log("📧 Sending email to:", email); // 🔍 Add this
+        const formattedDate = parsedDeadline.toLocaleString();
+        await sendEmail(
+            email,
+            "Task Scheduled - TaskMaster",
+            `You created a task "${title}" scheduled for ${formattedDate}.`,
+        );
+      }
+      await sendEmail(
+          email,
+          "Task Scheduled - TaskMaster",
+          `You created a task "${title}" scheduled for ${formattedDate}.`,
+      );
+    }
 
     res.status(201).json({message: "Task added", task});
   } catch (error) {
