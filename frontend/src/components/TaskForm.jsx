@@ -1,121 +1,166 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-/**
- * TaskForm Component
- * Allows users to create a new task with datetime and optional email.
- */
 const TaskForm = () => {
-  const [title, setTitle] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [type, setType] = useState("personal");
-  const [email, setEmail] = useState(""); // ✅ new
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
-  const backendURL = "https://us-central1-taskmaster-2a195.cloudfunctions.net/api";
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState("personal");
+  const [deadline, setDeadline] = useState("");
+  const [email, setEmail] = useState("");
+  const [assigned, setAssigned] = useState("");
+  const [notes, setNotes] = useState("");
+  const [role, setRole] = useState("user"); // default to 'user'
+
+  useEffect(() => {
+    const stored = localStorage.getItem("taskmasterUser");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setRole(parsed?.role || "user");
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
+    console.log("🚀 handleSubmit fired!");
     e.preventDefault();
-
-    if (!title || !deadline || !type) {
-      setMessage("Please fill in all required fields.");
+    console.log("🚀 handleSubmit fired!2");
+  
+    const storedUser = JSON.parse(localStorage.getItem("taskmasterUser") || "{}");
+    const uid = storedUser?.uid;
+  
+    if (!uid) {
+      alert("You must be logged in to create a task.");
       return;
     }
-
-    setLoading(true);
-    try {
-      const res = await fetch(`${backendURL}/tasks`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          deadline: new Date(deadline).toISOString(), // ✅ ensure it's full ISO datetime
-          type,
-          email: email || null, // optional
-        }),
-      });
-
-      const result = await res.json();
-
-      if (res.ok) {
-        setMessage("✅ Task added!");
-        setTitle("");
-        setDeadline("");
-        setType("personal");
-        setEmail("");
-      } else {
-        setMessage("Error: " + result.error);
-      }
-    } catch (error) {
-      console.error("Submit error:", error);
-      setMessage("Failed to connect to backend.");
+  
+    if (!title || !deadline || !type) {
+      alert("Please fill in all required fields.");
+      return;
     }
-
-    setLoading(false);
+  
+    const payload = {
+      uid,
+      title,
+      type,
+      deadline: new Date(deadline).toISOString(),
+      email: email || null,
+      owner: uid,
+      assigned: assigned ? assigned.split(",").map((s) => s.trim()) : [],
+      progress: 0,
+      status: "Pending",
+      notes
+    };
+    console.log("🧾 Final Payload to Backend:", {
+      uid,
+      title,
+      deadline: new Date(deadline).toISOString(),
+      type,
+      email,
+      owner: uid,
+      assigned: assigned ? assigned.split(",").map((s) => s.trim()) : [],
+      progress: 0,
+      status: "Pending",
+      notes
+    });
+  
+    try {
+      const res = await fetch("https://us-central1-taskmaster-2a195.cloudfunctions.net/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload), // ✅ flat structure
+      });
+  
+      const data = await res.json();
+      if (res.ok) {
+        alert("Task created successfully!");
+        navigate("/dashboard");
+      } else {
+        console.error("Error:", data);
+        alert("Failed to create task: " + data.error);
+      }
+    } catch (err) {
+      console.error("Submit error:", err);
+      alert("Something went wrong.");
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-4 rounded shadow mb-6">
-      <h2 className="text-lg font-semibold mb-3">➕ Add a New Task</h2>
+    <div className="max-w-xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
+      <h2 className="text-2xl font-bold mb-4 text-[#6B3FA0]">Create New Task</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block font-semibold">Title*</label>
+          <input
+            type="text"
+            className="w-full border px-3 py-2 rounded"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
 
-      <div className="mb-2">
-        <label className="block text-sm mb-1">Title:</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full border px-2 py-1 rounded"
-          required
-        />
-      </div>
+        <div>
+          <label className="block font-semibold">Type*</label>
+          <select
+            className="w-full border px-3 py-2 rounded"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
+            <option value="personal">Personal</option>
+            <option value="team">Team</option>
+            {role === "admin" && <option value="work">Work</option>}
+          </select>
+        </div>
 
-      <div className="mb-2">
-        <label className="block text-sm mb-1">Deadline (Date & Time):</label>
-        <input
-          type="datetime-local"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-          className="w-full border px-2 py-1 rounded"
-          required
-        />
-      </div>
+        <div>
+          <label className="block font-semibold">Deadline*</label>
+          <input
+            type="datetime-local"
+            className="w-full border px-3 py-2 rounded"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+            required
+          />
+        </div>
 
-      <div className="mb-2">
-        <label className="block text-sm mb-1">Notification Email (optional):</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full border px-2 py-1 rounded"
-          placeholder="user@example.com"
-        />
-      </div>
+        <div>
+          <label className="block font-semibold">Email (for notification)</label>
+          <input
+            type="email"
+            className="w-full border px-3 py-2 rounded"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
-      <div className="mb-4">
-        <label className="block text-sm mb-1">Task Type:</label>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="w-full border px-2 py-1 rounded"
+        <div>
+          <label className="block font-semibold">Assigned To (comma-separated emails)</label>
+          <input
+            type="text"
+            className="w-full border px-3 py-2 rounded"
+            value={assigned}
+            onChange={(e) => setAssigned(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block font-semibold">Notes</label>
+          <textarea
+            className="w-full border px-3 py-2 rounded"
+            rows={4}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="bg-[#6B3FA0] text-white font-semibold px-6 py-2 rounded hover:bg-[#58318e]"
         >
-          <option value="personal">Personal</option>
-          <option value="work">Work</option>
-          <option value="team">Team</option>
-        </select>
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-      >
-        {loading ? "Adding..." : "Add Task"}
-      </button>
-
-      {message && <p className="text-sm mt-2 text-gray-600">{message}</p>}
-    </form>
+          Create Task
+        </button>
+      </form>
+    </div>
   );
 };
 

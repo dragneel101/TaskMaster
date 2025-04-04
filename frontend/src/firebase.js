@@ -1,6 +1,7 @@
 // frontend/src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Replace with your actual Firebase project config (from Firebase Console)
 const firebaseConfig = {
@@ -18,4 +19,5 @@ const app = initializeApp(firebaseConfig);
 
 // Firestore instance
 const db = getFirestore(app);
-export { db };
+const auth = getAuth(app);
+export { db, auth };

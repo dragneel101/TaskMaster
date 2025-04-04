@@ -6,7 +6,7 @@ class TaskFactory {
    * Creates a task based on the type.
    * @param {string} type - The type of task (e.g., "personal", "work", "team").
    * @param {string} title - The task title.
-   * @param {string|Date} deadline - The deadline date in ISO format or Date object.
+   * @param {string|Date} deadline - The deadline date
    * @param {string} [email] - Optional email for notifications.
    * @param {string} [createdBy] - Email or UID of the creator.
    * @param {string} [owner] - Email or UID of the task owner.
@@ -14,15 +14,16 @@ class TaskFactory {
    * @return {Object} - A task object with default and computed fields.
    */
   static createTask(
-    type,
-    title,
-    deadline,
-    email = null,
-    createdBy = "",
-    owner = "",
-    assigned = []
+      type,
+      title,
+      deadline,
+      email = null,
+      createdBy = "",
+      owner = "",
+      assigned = [],
   ) {
-    const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline);
+    const deadlineDate = deadline instanceof Date ?
+     deadline : new Date(deadline);
 
     const baseTask = {
       title,

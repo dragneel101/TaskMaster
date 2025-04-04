@@ -23,7 +23,15 @@ const NewTask = () => {
       setMessage("Please fill in all required fields.");
       return;
     }
-
+  
+    const user = JSON.parse(localStorage.getItem("taskmasterUser") || "{}");
+    const uid = user?.uid;
+  
+    if (!uid) {
+      setMessage("You must be logged in to create a task.");
+      return;
+    }
+  
     setLoading(true);
     try {
       const res = await fetch(`${backendURL}/tasks`, {
@@ -32,23 +40,31 @@ const NewTask = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          uid, // ✅ backend needs this
           title,
           deadline: new Date(deadline).toISOString(),
           type,
           email: email || null,
-          owner,
-          createdBy,
+          owner: owner || uid,
+          createdBy: createdBy || uid,
           assigned: assigned ? assigned.split(",").map((s) => s.trim()) : [],
           progress,
         }),
       });
-
+  
       const result = await res.json();
       if (res.ok) {
         setMessage("✅ Task added!");
         setUndoAvailable(true);
+        setTitle("");
+        setDeadline("");
+        setType("personal");
+        setEmail("");
+        setOwner("");
+        setCreatedBy("");
+        setAssigned("");
+        setProgress(0);
         setTimeout(() => setUndoAvailable(false), 10000);
-        navigate("/");
       } else {
         setMessage("Error: " + result.error);
       }
@@ -58,6 +74,7 @@ const NewTask = () => {
     }
     setLoading(false);
   };
+  
 
   const handleUndo = async () => {
     try {
@@ -71,8 +88,10 @@ const NewTask = () => {
   };
 
   return (
+    
     <div className="p-6 max-w-xl mx-auto">
       <h2 className="text-xl font-bold text-[#6B3FA0] mb-4">➕ Add New Task</h2>
+      <div className="bg-white shadow-lg rounded-lg p-6 space-y-6 border border-gray-200">
 
       {undoAvailable && (
         <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded flex justify-between items-center">
@@ -194,6 +213,7 @@ const NewTask = () => {
 
         {message && <p className="text-sm text-gray-600 mt-2">{message}</p>}
       </form>
+    </div>
     </div>
   );
 };

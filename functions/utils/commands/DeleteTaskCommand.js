@@ -1,54 +1,55 @@
 const admin = require("firebase-admin");
 const db = admin.firestore();
-
+const {getUserRole} = require("../../firebase");
 /**
- * Command to delete a task from Firestore and support undo.
+ * Command to delete a task from Firestore.
+ * Stores task data to support undo operation.
  */
 class DeleteTaskCommand {
   /**
    * @param {string} taskId - ID of the task to delete
+   * @param {string} uid - UID of the user attempting the delete
    */
-  constructor(taskId) {
+  constructor(taskId, uid) {
     this.taskId = taskId;
-    this.deletedTaskData = null; // Used for undo
+    this.uid = uid;
+    this.deletedTaskData = null;
   }
 
-
   /**
-   * Executes the delete operation and stores task data for undo.
+   * Executes the deletion of the task.
+   * Only users with admin role are allowed to delete.
+   * @return {Promise<void>}
    */
   async execute() {
-    try {
-      const taskRef = db.collection("tasks").doc(this.taskId);
-      const doc = await taskRef.get();
-      if (!doc.exists) {
-        console.log(`Task ${this.taskId} does not exist.`);
-        return;
-      }
+    const role = await getUserRole(this.uid);
 
-      this.deletedTaskData = doc.data(); // store for undo
-      await taskRef.delete();
-      console.log(`Task ${this.taskId} deleted.`);
-    } catch (error) {
-      console.error("Error deleting task:", error);
+    if (role !== "admin") {
+      throw new Error("Only admins can delete tasks.");
     }
+
+    const taskRef = db.collection("tasks").doc(this.taskId);
+    const doc = await taskRef.get();
+    if (!doc.exists) {
+      throw new Error(`Task ${this.taskId} does not exist.`);
+    }
+
+    this.deletedTaskData = doc.data();
+    await taskRef.delete();
+    console.log(`Task ${this.taskId} deleted.`);
   }
 
-
   /**
-   * Undoes the delete by restoring the previously deleted task.
+   * Undoes the task deletion by restoring the previously deleted data.
+   * @return {Promise<void>}
    */
   async undo() {
-    try {
-      if (!this.deletedTaskData) {
-        console.log("No task data stored to undo.");
-        return;
-      }
-      await db.collection("tasks").doc(this.taskId).set(this.deletedTaskData);
-      console.log(`Undo: Task ${this.taskId} restored.`);
-    } catch (error) {
-      console.error("Undo delete failed:", error);
+    if (!this.deletedTaskData) {
+      console.log("No task data stored to undo.");
+      return;
     }
+    await db.collection("tasks").doc(this.taskId).set(this.deletedTaskData);
+    console.log(`Undo: Task ${this.taskId} restored.`);
   }
 }
 

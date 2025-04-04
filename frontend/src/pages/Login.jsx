@@ -1,13 +1,39 @@
 import React, { useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Connect with Firebase Auth here if desired
-    alert("Login logic not implemented yet!");
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      const idToken = await user.getIdToken();
+
+      const res = await fetch("https://us-central1-taskmaster-2a195.cloudfunctions.net/api/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("taskmasterUser", JSON.stringify(data));
+        alert(`Login successful! Welcome ${data.role}`);
+        navigate("/dashboard"); // ✅ Redirect to dashboard
+      } else {
+        alert("Login failed: " + data.error);
+      }
+
+    } catch (err) {
+      console.error("Login error:", err.message);
+      alert("Login error: " + err.message);
+    }
   };
 
   return (

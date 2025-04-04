@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+} from "recharts";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot
+  collection, query, where, orderBy, onSnapshot, deleteDoc, doc
 } from "firebase/firestore";
+import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
+import { FaEye, FaTrash } from "react-icons/fa";
 
 const Dashboard = () => {
   const [allTasks, setAllTasks] = useState([]);
@@ -17,7 +18,12 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const deletedTaskTimeout = useRef(null);
+  const clickTimestamps = useRef({});
   const navigate = useNavigate();
+  const storedUser = JSON.parse(localStorage.getItem("taskmasterUser") || "{}");
+  const currentRole = storedUser?.role;
+
 
   const fetchTasks = useCallback(() => {
     let q = query(collection(db, "tasks"), orderBy("deadline"));
@@ -35,7 +41,10 @@ const Dashboard = () => {
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const taskData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const taskData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
       setAllTasks(taskData);
       setTasks(taskData);
     });
@@ -48,9 +57,96 @@ const Dashboard = () => {
     return () => unsubscribe();
   }, [fetchTasks]);
 
+  const handleTaskClick = (task) => {
+    const now = Date.now();
+    const lastClick = clickTimestamps.current[task.id] || 0;
+    const isDoubleClick = now - lastClick < 300;
+
+    if (isDoubleClick) {
+      navigate(`/task/${task.id}`);
+    } else {
+      setSelectedTaskId(task.id);
+      clickTimestamps.current[task.id] = now;
+    }
+  };
+
+  const handleDelete = (task) => {
+    toast.info(
+      <div className="flex flex-col">
+        <span className="truncate max-w-[220px]">Task "{task.title}" deleted.</span>
+        <button
+          onClick={() => undoDelete(task)}
+          className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 w-fit self-start"
+        >
+          Undo
+        </button>
+      </div>,
+      {
+        autoClose: 15000,
+        closeOnClick: false,
+      }
+    );
+
+    deletedTaskTimeout.current = setTimeout(async () => {
+      await deleteDoc(doc(db, "tasks", task.id));
+    }, 5000);
+  };
+
+  const undoDelete = (task) => {
+    if (deletedTaskTimeout.current) {
+      clearTimeout(deletedTaskTimeout.current);
+      deletedTaskTimeout.current = null;
+    }
+    toast.dismiss();
+    toast.success(`Undo delete: "${task.title}" restored.`);
+  };
+  const handleExportCSV = () => {
+    if (!tasks.length) return;
+  
+    const headers = [
+      "Title",
+      "Type",
+      "Deadline",
+      "Owner",
+      "Created By",
+      "Status",
+      "Assigned",
+      "Progress",
+      "Notes"
+    ];
+  
+    const rows = tasks.map((task) => [
+      task.title,
+      task.type,
+      new Date(task.deadline?.seconds * 1000 || task.deadline).toLocaleString(),
+      task.owner || "",
+      task.createdBy || "",
+      task.status || "",
+      (task.assigned || []).join(", "),
+      task.progress ?? 0,
+      (task.notes || "").replace(/\n/g, " "),
+    ]);
+  
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+  
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+  
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "taskmaster_tasks.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="p-6 space-y-6">
-      {/* Filters + Button */}
+      <ToastContainer />
+
+      {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label className="block text-sm font-medium">Filter by Owner</label>
@@ -115,9 +211,17 @@ const Dashboard = () => {
         >
           + Add Task
         </button>
+        {currentRole === "admin" && (
+      <button
+        onClick={handleExportCSV}
+        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      >
+        Export to CSV
+      </button>
+    )}
       </div>
 
-      {/* Date filters */}
+      {/* Date Filters */}
       <div className="flex gap-4">
         <div>
           <label className="block text-sm font-medium">Start Date</label>
@@ -139,7 +243,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Task list + analytics */}
+      {/* Task List + Analytics */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Task List */}
         <ul className="space-y-3 xl:col-span-2">
@@ -147,12 +251,12 @@ const Dashboard = () => {
             {tasks.map((task) => (
               <motion.li
                 key={task.id}
-                onClick={() => navigate(`/task/${task.id}`)}
+                onClick={() => handleTaskClick(task)}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                className={`p-4 rounded cursor-pointer border-l-4 transition-transform duration-300 hover:scale-[1.01] ${
+                className={`p-4 rounded cursor-pointer border-l-4 transition duration-300 hover:scale-[1.01] ${
                   task.status === 'Completed' ? 'border-green-600 bg-green-50' :
                   task.status === 'In Progress' ? 'border-yellow-500 bg-yellow-50' :
                   'border-red-500 bg-red-50'
@@ -162,18 +266,37 @@ const Dashboard = () => {
                 <div className="text-sm text-gray-600">
                   {task.status} | Due: {new Date(task.deadline.seconds * 1000).toLocaleString()}
                 </div>
-                <div className="text-xs text-gray-500">
-                  Owner: {task.owner || "N/A"}
-                </div>
-                <div className="text-xs text-gray-500">
-                  Assigned: {task.assigned?.join(", ") || "None"}
-                </div>
+                <div className="text-xs text-gray-500">Owner: {task.owner || "N/A"}</div>
+                <div className="text-xs text-gray-500">Assigned: {task.assigned?.join(", ") || "None"}</div>
                 <div className="w-full bg-gray-200 rounded h-2 mt-2">
                   <div
                     className="bg-green-500 h-2 rounded"
                     style={{ width: `${task.progress || 0}%` }}
                   ></div>
                 </div>
+
+                {selectedTaskId === task.id && (
+                  <div className="flex gap-4 mt-3">
+                    <button
+                      className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded hover:bg-blue-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/task/${task.id}`);
+                      }}
+                    >
+                      <FaEye /> View
+                    </button>
+                    <button
+                      className="flex items-center gap-1 bg-red-100 text-red-800 px-3 py-1 rounded hover:bg-red-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(task);
+                      }}
+                    >
+                      <FaTrash /> Delete
+                    </button>
+                  </div>
+                )}
               </motion.li>
             ))}
           </AnimatePresence>
@@ -181,13 +304,10 @@ const Dashboard = () => {
 
         {/* Summary & Chart */}
         <div className="space-y-4">
-          {/* Total Task Count */}
           <div className="bg-white shadow rounded p-6 text-center">
             <h2 className="text-lg font-medium text-gray-700 mb-2">Total Tasks</h2>
             <p className="text-4xl font-bold text-[#6B3FA0]">{tasks.length}</p>
           </div>
-
-          {/* Bar Chart */}
           <div className="bg-white shadow rounded p-4 h-[300px]">
             <h2 className="text-lg font-semibold mb-2">Tasks by Status</h2>
             <ResponsiveContainer width="100%" height="100%">

@@ -1,6 +1,7 @@
 const express = require("express");
 // eslint-disable-next-line new-cap
 const router = express.Router();
+const {getUserRole} = require("../firebase");
 
 const {db} = require("../firebase");
 const TaskFactory = require("../utils/TaskFactory");
@@ -40,28 +41,42 @@ router.get("/tasks", async (req, res) => {
  */
 router.post("/tasks", async (req, res) => {
   try {
-    const {title, deadline, type, email} = req.body;
+    const {uid, title, deadline, type, email,
+      assigned = [], owner, progress} = req.body;
 
-    if (!title || !deadline || !type) {
-      return res.status(400).json({error: "Missing task fields"});
+    if (!uid || !title || !deadline || !type) {
+      return res.status(400).json({error:
+         "Missing required task fields (uid, title, deadline, type)"});
     }
 
-    const parsedDeadline = new Date(deadline); // ensures deadline includes time
+    const parsedDeadline = new Date(deadline);
+    const role = await getUserRole(uid);
 
-    const task = TaskFactory.createTask(type, title, parsedDeadline, email);
-    const command = new AddTaskCommand(db, task);
+    // Basic user check: prevent creating work tasks
+    if (type === "work" && role !== "admin") {
+      return res.status(403).json({
+        error: "Only admins can create work tasks."});
+    }
+
+    // Generate base task using factory
+    const baseTask = TaskFactory.createTask(type, title, parsedDeadline, email);
+
+    // Extend with required metadata
+    const task = {
+      ...baseTask,
+      createdBy: uid,
+      owner: owner || uid,
+      assigned,
+      progress: progress || "Not Started",
+    };
+
+    const command = new AddTaskCommand(db, task, uid);
     await CommandManager.execute(command);
+
+    // Send email if applicable
     if (email) {
       const formattedDate = parsedDeadline.toLocaleString();
-      if (email) {
-        console.log("📧 Sending email to:", email); // 🔍 Add this
-        const formattedDate = parsedDeadline.toLocaleString();
-        await sendEmail(
-            email,
-            "Task Scheduled - TaskMaster",
-            `You created a task "${title}" scheduled for ${formattedDate}.`,
-        );
-      }
+      console.log("📧 Sending email to:", email);
       await sendEmail(
           email,
           "Task Scheduled - TaskMaster",
@@ -69,10 +84,10 @@ router.post("/tasks", async (req, res) => {
       );
     }
 
-    res.status(201).json({message: "Task added", task});
-  } catch (error) {
-    console.error("Error creating task:", error);
-    res.status(500).json({error: error.message});
+    res.status(200).json({message: "Task created successfully."});
+  } catch (err) {
+    console.error("Error creating task:", err);
+    res.status(500).json({error: err.message || "Failed to create task"});
   }
 });
 
