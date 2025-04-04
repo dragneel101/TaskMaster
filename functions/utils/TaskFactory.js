@@ -6,18 +6,33 @@ class TaskFactory {
    * Creates a task based on the type.
    * @param {string} type - The type of task (e.g., "personal", "work", "team").
    * @param {string} title - The task title.
-   * @param {string|Date} deadline - The deadline date in ISO format
+   * @param {string|Date} deadline - The deadline date in ISO format or Date object.
    * @param {string} [email] - Optional email for notifications.
-   * @return {Object} - A task object with default fields.
+   * @param {string} [createdBy] - Email or UID of the creator.
+   * @param {string} [owner] - Email or UID of the task owner.
+   * @param {string[]} [assigned] - List of assigned users (emails or UIDs).
+   * @return {Object} - A task object with default and computed fields.
    */
-  static createTask(type, title, deadline, email = null) {
-    const deadlineDate = deadline instanceof Date ?
-     deadline : new Date(deadline);
+  static createTask(
+    type,
+    title,
+    deadline,
+    email = null,
+    createdBy = "",
+    owner = "",
+    assigned = []
+  ) {
+    const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline);
 
     const baseTask = {
       title,
       deadline: deadlineDate,
       email,
+      notes: "",
+      progress: 0,
+      createdBy,
+      owner,
+      assigned,
     };
 
     switch (type) {
@@ -43,7 +58,6 @@ class TaskFactory {
           status: "Not Started",
           priority: "Medium",
           shared: true,
-          assigned: [],
           type: "team",
         };
       default:
