@@ -67,5 +67,43 @@ TaskMaster follows the **4+1 View Model**:
 ```bash
 git clone https://github.com/your-username/taskmaster.git
 cd taskmaster
+bash
+```
 
- 
+###2. Install Dependencies
+```
+npm install    # For backend
+cd client
+npm install    # For frontend
+```
+
+###3. Firebase Setup
+```
+Place your Firebase Admin SDK file in root and rename to:
+```
+
+###4. Start Development Servers
+   ```
+ # Backend
+npm run dev
+
+# Frontend
+cd client
+npm start
+```
+
+🧩 Design Patterns Used
+
+Pattern	Purpose
+MVC	Separates concerns for modularity
+Singleton	Centralized Firebase connection
+Observer	Push notifications when tasks are updated
+Factory	Create different task templates
+Command	Enables undo/redo operations (optional feature scope)
+
+
+Security
+    -Firebase Authentication used for secure access
+    -OAuth optional for third-party login
+    -Environment variables and secrets are excluded from the repo
+
