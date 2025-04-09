@@ -70,19 +70,19 @@ cd taskmaster
 bash
 ```
 
-###2. Install Dependencies
+### 2. Install Dependencies
 ```
 npm install    # For backend
 cd client
 npm install    # For frontend
 ```
 
-###3. Firebase Setup
+### 3. Firebase Setup
 ```
 Place your Firebase Admin SDK file in root and rename to:
 ```
 
-###4. Start Development Servers
+### 4. Start Development Servers
    ```
  # Backend
 npm run dev
