@@ -94,12 +94,13 @@ npm start
 
 🧩 Design Patterns Used
 
-Pattern	Purpose
-MVC	Separates concerns for modularity
-Singleton	Centralized Firebase connection
-Observer	Push notifications when tasks are updated
-Factory	Create different task templates
-Command	Enables undo/redo operations (optional feature scope)
+|Pattern	  |Purpose                                                  |
+|-----------|---------------------------
+|MVC        |Separates concerns for modularity                        |
+|Singleton  |	Centralized Firebase connection                          |
+|Observer	  |Push notifications when tasks are  updated                |
+|Factory	  |Create different task templates                      |
+|Command	  |Enables undo/redo operations (optional feature scope)|
 
 
 Security
